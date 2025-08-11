@@ -54,6 +54,44 @@ Underneath all of it, there's this restless question: How far can my "why" reall
   const [isMobileBarVisible, setIsMobileBarVisible] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<string>("");
+  const [currentDate, setCurrentDate] = useState<string>(
+    new Date().toISOString().split("T")[0]
+  );
+  const [dayEntries, setDayEntries] = useState<{ [date: string]: string }>({});
+
+  // Get day label for journal-style display
+  const getDateLabel = (date: string) => {
+    const today = new Date().toISOString().split("T")[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+    if (date === today) return "Today";
+    if (date === yesterdayStr) return "Yesterday";
+
+    const dateObj = new Date(date);
+    return dateObj.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Check if we can go to next day (only up to today)
+  const canGoNext = () => {
+    const today = new Date().toISOString().split("T")[0];
+    return currentDate < today;
+  };
+
+  // Switch to a different day, saving current content first
+  const switchToDay = (newDate: string) => {
+    // Save current day's content
+    setDayEntries((prev) => ({ ...prev, [currentDate]: entry }));
+
+    // Switch to new day and load its content
+    setCurrentDate(newDate);
+    setEntry(dayEntries[newDate] || "");
+  };
 
   // Simple save function that makes a POST request
   const saveToDatabase = async () => {
@@ -346,10 +384,10 @@ Underneath all of it, there's this restless question: How far can my "why" reall
 
       {/* Editor card (clean, stoic) */}
       <section>
-        <div className="rounded-xl sm:rounded-2xl p-0 border border-zinc-200/70 dark:border-zinc-700/70 bg-white/90 dark:bg-zinc-900/80 backdrop-blur-sm shadow-[0_1px_0_0_rgba(0,0,0,0.02)] hover:shadow-[0_2px_8px_0_rgba(0,0,0,0.04)] transition-shadow">
+        <div className="rounded-xl sm:rounded-2xl p-0 border border-zinc-200/70 dark:border-zinc-700/70 bg-white/90 dark:bg-zinc-900/80 backdrop-blur-sm shadow-[0_1px_0_0_rgba(0,0,0,0.02)] hover:shadow-[0_2px_8px_0_rgba(0,0,0,0.04)] transition-shadow relative">
           <div className="px-3 sm:px-6 pt-3 sm:pt-6 pb-2">
-            <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
-              <div className="flex-1 w-full sm:w-auto">
+            <div className="flex flex-col items-center">
+              <div className="w-full max-w-2xl">
                 {isEditingTitle ? (
                   <div className="space-y-2">
                     <input
@@ -363,46 +401,129 @@ Underneath all of it, there's this restless question: How far can my "why" reall
                         }
                       }}
                       placeholder="Enter a title for your entry..."
-                      className="w-full text-2xl font-serif font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 bg-transparent border-none outline-none focus:ring-0 p-0"
+                      className="w-full text-2xl font-serif font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 bg-transparent border-none outline-none focus:ring-0 p-0 text-center"
                       autoFocus
                     />
                   </div>
                 ) : (
                   <h1
                     onClick={() => setIsEditingTitle(true)}
-                    className="font-serif text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 cursor-pointer hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors"
+                    className={`font-serif text-2xl font-semibold tracking-tight cursor-pointer transition-colors text-center ${
+                      entryTitle
+                        ? "text-zinc-900 dark:text-zinc-100 hover:text-zinc-700 dark:hover:text-zinc-300"
+                        : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-600 dark:hover:text-zinc-400"
+                    }`}
                     title="Click to edit title"
                   >
-                    {entryTitle}
+                    {entryTitle || "Daily Journal"}
                   </h1>
                 )}
 
-                {!isFocusMode && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <p className="text-zinc-500 dark:text-zinc-400 text-sm">
-                      Write with honesty. Keep it raw and unfiltered.
-                    </p>
-                  </div>
-                )}
-              </div>
+                {/* Journal date - clean navigation layout */}
+                <div className="mt-4 mb-4">
+                  <div className="flex items-center justify-center">
+                    <button
+                      onClick={() => {
+                        const prevDate = new Date(currentDate);
+                        prevDate.setDate(prevDate.getDate() - 1);
+                        switchToDay(prevDate.toISOString().split("T")[0]);
+                      }}
+                      className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-1 w-6 h-6 flex items-center justify-center"
+                      title="Previous day"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                      >
+                        <path
+                          d="M10 12L6 8L10 4"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
 
-              {/* Toolbar toggle - hidden on mobile */}
-              {!isFocusMode && editor && (
-                <button
-                  onClick={() => setIsToolbarVisible(!isToolbarVisible)}
-                  className="hidden sm:block px-3 py-1.5 text-xs rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-700 border border-zinc-200/70 dark:border-zinc-700/70 transition-all duration-200 whitespace-nowrap self-start sm:self-auto"
-                  title={
-                    isToolbarVisible
-                      ? "Hide formatting toolbar"
-                      : "Show formatting toolbar"
-                  }
-                >
-                  <span className="transition-all duration-200">
-                    {isToolbarVisible ? "Hide Toolbar" : "Show Toolbar"}
-                  </span>
-                </button>
-              )}
+                    <div className="flex flex-col items-center mx-3">
+                      <div className="font-serif text-zinc-600 dark:text-zinc-400 text-lg italic tracking-tight text-center w-48">
+                        {getDateLabel(currentDate)}
+                      </div>
+
+                      {/* Show full date only for "Today" and "Yesterday" to avoid duplication */}
+                      {["Today", "Yesterday"].includes(
+                        getDateLabel(currentDate)
+                      ) && (
+                        <div className="text-zinc-400 dark:text-zinc-500 text-xs font-mono mt-1">
+                          {new Date(currentDate).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        const nextDate = new Date(currentDate);
+                        nextDate.setDate(nextDate.getDate() + 1);
+                        switchToDay(nextDate.toISOString().split("T")[0]);
+                      }}
+                      className={`transition-colors p-1 w-6 h-6 flex items-center justify-center ${
+                        canGoNext()
+                          ? "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                          : "text-transparent pointer-events-none"
+                      }`}
+                      title={canGoNext() ? "Next day" : ""}
+                      disabled={!canGoNext()}
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 16 16"
+                        fill="none"
+                      >
+                        <path
+                          d="M6 4L10 8L6 12"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {!isFocusMode && (
+                    <div className="flex justify-center mt-3">
+                      <p className="text-zinc-500 dark:text-zinc-400 text-sm text-center">
+                        Write with honesty. Keep it raw and unfiltered.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
+
+            {/* Toolbar toggle - positioned absolutely to not affect centering */}
+            {!isFocusMode && editor && (
+              <button
+                onClick={() => setIsToolbarVisible(!isToolbarVisible)}
+                className="hidden sm:block absolute top-3 right-3 sm:top-6 sm:right-6 px-3 py-1.5 text-xs rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200/80 dark:hover:bg-zinc-700 border border-zinc-200/70 dark:border-zinc-700/70 transition-all duration-200 whitespace-nowrap"
+                title={
+                  isToolbarVisible
+                    ? "Hide formatting toolbar"
+                    : "Show formatting toolbar"
+                }
+              >
+                <span className="transition-all duration-200">
+                  {isToolbarVisible ? "Hide Toolbar" : "Show Toolbar"}
+                </span>
+              </button>
+            )}
           </div>
           <div className="border-t border-zinc-200/60 dark:border-zinc-700/60" />
 
