@@ -585,11 +585,11 @@ Underneath all of it, there's this restless question: How far can my "why" reall
         />
       </section>
 
-      {/* Mobile sticky formatting toolbar */}
-      {editor && !isFocusMode && (
+      {/* Mobile sticky formatting toolbar - COMMENTED OUT */}
+      {/* {editor && !isFocusMode && (
         <>
           {/* Minimalistic arrow toggle - centered above/at bottom */}
-          <button
+      {/* <button
             onClick={() => setIsMobileBarVisible(!isMobileBarVisible)}
             className={`sm:hidden fixed left-1/2 transform -translate-x-1/2 z-50 p-1.5 text-zinc-700 dark:text-zinc-200 hover:text-zinc-900 dark:hover:text-white transition-all duration-200 ${
               isMobileBarVisible ? "bottom-12" : "bottom-8"
@@ -617,11 +617,11 @@ Underneath all of it, there's this restless question: How far can my "why" reall
 
           <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur border-t border-zinc-200 dark:border-zinc-700">
             {/* Toolbar buttons */}
-            {isMobileBarVisible && (
+      {/* {isMobileBarVisible && (
               <div className="px-1.5 py-2 [@supports(padding:max(0px))]:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
                 <div className="flex items-center gap-1 overflow-x-auto">
                   {/* Basic formatting */}
-                  <button
+      {/* <button
                     onMouseDown={(e) => {
                       e.preventDefault();
                       editor.chain().focus().toggleBold().run();
@@ -667,10 +667,10 @@ Underneath all of it, there's this restless question: How far can my "why" reall
                   </button>
 
                   {/* Divider */}
-                  <div className="mx-1 h-5 w-px bg-zinc-300 dark:bg-zinc-600" />
+      {/* <div className="mx-1 h-5 w-px bg-zinc-300 dark:bg-zinc-600" />
 
                   {/* Structure formatting */}
-                  <button
+      {/* <button
                     onMouseDown={(e) => {
                       e.preventDefault();
                       editor.chain().focus().toggleHeading({ level: 2 }).run();
@@ -761,7 +761,7 @@ Underneath all of it, there's this restless question: How far can my "why" reall
             )}
           </div>
         </>
-      )}
+      )} */}
     </div>
   );
 }
