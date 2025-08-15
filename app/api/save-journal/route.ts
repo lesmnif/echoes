@@ -3,11 +3,13 @@ import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   try {
-    const { identity, entry } = await request.json();
+    const { identity, entry, entryDate, title } = await request.json();
     
     console.log("📝 Saving journal data...");
     console.log("Identity length:", identity?.length || 0);
     console.log("Entry length:", entry?.length || 0);
+    console.log("Entry date:", entryDate);
+    console.log("Entry title:", title);
 
     const cookieStore = await cookies();
     const supabase = createClient(cookieStore);
@@ -28,8 +30,8 @@ export async function POST(request: Request) {
       throw identityError;
     }
 
-    // Save today's journal entry (upsert)
-    const today = new Date().toISOString().split('T')[0];
+    // Save journal entry for the specified date (upsert)
+    const targetDate = entryDate || new Date().toISOString().split('T')[0];
     const plainTextContent = entry.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const wordCount = plainTextContent.split(/\s+/).filter(Boolean).length;
 
@@ -37,7 +39,8 @@ export async function POST(request: Request) {
       .from('journal_entries')
       .upsert({
         user_id: defaultUserId,
-        entry_date: today,
+        entry_date: targetDate,
+        title: title || 'Daily Journal',
         content: entry,
         word_count: wordCount,
         last_edited_at: new Date().toISOString()
@@ -50,8 +53,8 @@ export async function POST(request: Request) {
       throw journalError;
     }
 
-    console.log("✅ Data saved successfully");
-    return Response.json({ success: true });
+    console.log(`✅ Data saved successfully for date: ${targetDate}`);
+    return Response.json({ success: true, savedDate: targetDate });
 
   } catch (error) {
     console.error("❌ Error in save-journal API:", error);

@@ -1,4 +1,4 @@
-import "../(preview)/globals.css";
+import "@/app/(preview)/globals.css";
 import { Metadata } from "next";
 import { Toaster } from "sonner";
 

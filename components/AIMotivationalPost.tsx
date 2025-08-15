@@ -15,7 +15,11 @@ interface AIMotivationalPostProps {
   theme?: string;
   style?: string;
   identity?: string;
-  journal?: string;
+  journal?: string; // Keep for backward compatibility
+  journalEntries?: Array<{
+    entry_date: string;
+    content: string;
+  }>;
 }
 
 export default function AIMotivationalPost({
@@ -23,7 +27,9 @@ export default function AIMotivationalPost({
   style,
   identity,
   journal,
+  journalEntries,
 }: AIMotivationalPostProps) {
+  console.log("journalEntries", journalEntries);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPostReady, setIsPostReady] = useState(false);
@@ -195,16 +201,6 @@ export default function AIMotivationalPost({
     );
   }
 
-  // Debug logging
-  console.log("Current state:", {
-    isLoading,
-    hasObject: !!object,
-    hasPost: !!object?.post,
-    hasPartialData: object?.post ? hasPartialData(object.post) : false,
-    isPostReady,
-    object: object,
-  });
-
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
       {/* Show preview while loading - show as soon as we have any data */}
@@ -325,7 +321,7 @@ export default function AIMotivationalPost({
                   theme: theme || "General motivation and success",
                   style: style || "Direct and powerful",
                   identity: identity || "",
-                  journal: journal || "",
+                  journal: journalEntries || [],
                 });
               }}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"

@@ -12,43 +12,49 @@ interface JournalData {
   whoIAm: string;
 }
 
+interface JournalEntry {
+  id: string;
+  user_id: string;
+  entry_date: string;
+  title: string | null;
+  content: string | null;
+  word_count: number | null;
+  created_at: string | null;
+  updated_at: string | null;
+  last_edited_at: string | null;
+}
+
 interface JournalEditorProps {
   initialIdentity: string;
   initialEntry: string;
+  todayEntry: JournalEntry | null;
 }
 
 export default function JournalEditor({
   initialIdentity,
   initialEntry,
+  todayEntry,
 }: JournalEditorProps) {
   // Initialize with server-loaded data or fallback defaults
   const [journalData, setJournalData] = useState<JournalData>({
-    whoIAm:
-      initialIdentity ||
-      `I'm an engineer, builder, and creative thinker who can't help but see the world as a set of systems waiting to be improved — or completely reimagined. I'm obsessed with the intersection of AI, education, and self-growth, because I believe the right tools can unlock potential in people they didn't even know they had. I'm not here to chase shiny trends or build for vanity metrics; I want to create things that last, tools and frameworks that people can carry through different seasons of life.
-
-I value responsibility — owning my decisions, my time, my outcomes. I crave autonomy — the space to think, to build, to push boundaries without asking for permission. And I'm fueled by purpose — the kind of vision that keeps you working when nobody's watching, that makes you choose the hard road because it's the one that matters.
-
-Fitness isn't just a hobby; it's my way of training discipline and resilience in every other part of life. Storytelling isn't just entertainment; it's how I make meaning, connect ideas, and inspire action. Technology isn't just code; it's leverage — a way to scale impact beyond my own reach.
-
-I plan to live intentionally — designing my days around health, clarity, and meaningful work. My idea of success isn't "more" for the sake of more, but building a life and systems that align with my values, challenge my limits, and empower others along the way. I want my work to outlive me, and I'm willing to take uncomfortable risks to make that happen.
-
-Underneath all of it, there's this restless question: How far can my "why" really take me?`,
+    whoIAm: initialIdentity,
   });
 
   // Initialize with server-loaded data or fallback default
-  const [entry, setEntry] = useState<string>(
-    initialEntry ||
-      `<h2><strong>Random ideas you've had lately</strong></h2><br><p>feeling stuck lately<br>been thinking about moving cities</p><br><h2><strong>Things you've been thinking deeply about</strong></h2><br><p>we're all one decision away from a completely different life<br>what if i just... <strong>changed everything tomorrow</strong><br>sometimes wonder if what i'm building actually matters or if i'm just chasing shiny objects</p><br><h2><strong>Something you learned recently</strong></h2><br><p>saw this quote: <em>"comfort is the enemy of mastery"</em> - hit different<br>everyone on social media is just performing instead of being real. am i doing that too?</p><br><h2><strong>Questions you've been asking yourself</strong></h2><br><p>been playing it way too safe recently. need to take more risks?<br>maybe need to be more <strong>aggressive</strong> about what i want?<br>or maybe i'm overthinking everything lol</p><br><h2><strong>Quotes you love (with why you like them)</strong></h2><br><p><em>"comfort is the enemy of mastery"</em> - because it's calling me out<br><em>"the only way out is through"</em> - reminds me to face hard things</p><br><h2><strong>Random brain dumps</strong></h2><br><p>not making enough progress on goals<br>life feels too <u>comfortable</u> rn and that's probably not good<br>random thought: why do we wait for "the right time" for everything<br><strong>what if there is no right time?</strong></p><br><h2><strong>Current mood/feelings</strong></h2><br><p>need to figure out what i really care about<br>or just taking bigger risks in general<br>feeling like i'm on the edge of something big</p>`
-  );
+  const [entry, setEntry] = useState<string>(initialEntry);
 
+  // Debug: Log initial entry
+  console.log("Initial entry:", initialEntry);
+  console.log("Today entry prop:", todayEntry);
   const [wordCount, setWordCount] = useState(0);
   const [isEditingIdentity, setIsEditingIdentity] = useState(false);
   const [isFocusMode, setIsFocusMode] = useState(false);
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string>("");
   const [, setToolbarTick] = useState(0);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const [entryTitle, setEntryTitle] = useState("Daily Journal");
+  const [entryTitle, setEntryTitle] = useState(
+    todayEntry?.title || "Daily Journal"
+  );
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isToolbarVisible, setIsToolbarVisible] = useState(true);
   const [isMobileBarVisible, setIsMobileBarVisible] = useState(true);
@@ -58,6 +64,10 @@ Underneath all of it, there's this restless question: How far can my "why" reall
     new Date().toISOString().split("T")[0]
   );
   const [dayEntries, setDayEntries] = useState<{ [date: string]: string }>({});
+  const [allJournalEntries, setAllJournalEntries] = useState<JournalEntry[]>(
+    []
+  );
+  const [isLoadingEntries, setIsLoadingEntries] = useState(false);
 
   // Get day label for journal-style display
   const getDateLabel = (date: string) => {
@@ -77,27 +87,117 @@ Underneath all of it, there's this restless question: How far can my "why" reall
     });
   };
 
-  // Check if we can go to next day (only up to today)
-  const canGoNext = () => {
+  // Get available dates for navigation (entries + today)
+  const getAvailableDates = () => {
     const today = new Date().toISOString().split("T")[0];
-    return currentDate < today;
+    const entryDates = allJournalEntries.map((entry) => entry.entry_date);
+
+    // Include today and all entry dates, remove duplicates
+    const availableDates = [...new Set([...entryDates, today])].sort();
+    return availableDates;
+  };
+
+  // Check if we can go to previous day
+  const canGoPrevious = () => {
+    const availableDates = getAvailableDates();
+    const currentIndex = availableDates.indexOf(currentDate);
+    return currentIndex > 0; // Can go back if not the first date
+  };
+
+  // Check if we can go to next day
+  const canGoNext = () => {
+    const availableDates = getAvailableDates();
+    const currentIndex = availableDates.indexOf(currentDate);
+    return currentIndex < availableDates.length - 1; // Can go forward if not the last date
+  };
+
+  // Fetch all journal entries in the background
+  const fetchAllEntries = async () => {
+    try {
+      setIsLoadingEntries(true);
+      const response = await fetch("/api/journal-entries");
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch entries");
+      }
+
+      const data = await response.json();
+      console.log("data", data, data.entries);
+      setAllJournalEntries(data.entries || []);
+
+      // Populate dayEntries with the loaded data
+      const entriesMap: { [date: string]: string } = {};
+      data.entries?.forEach((entry: JournalEntry) => {
+        entriesMap[entry.entry_date] = entry.content || "";
+      });
+      console.log("entriesMap", entriesMap);
+      setDayEntries(entriesMap);
+    } catch (error) {
+      console.error("Error fetching entries:", error);
+    } finally {
+      setIsLoadingEntries(false);
+    }
   };
 
   // Switch to a different day, saving current content first
   const switchToDay = (newDate: string) => {
-    // Save current day's content
+    console.log("switchToDay called with date:", newDate);
+    console.log("current entry before switch:", entry);
+
+    // Save current day's content to local state
     setDayEntries((prev) => ({ ...prev, [currentDate]: entry }));
 
-    // Switch to new day and load its content
+    // Switch to new day
     setCurrentDate(newDate);
-    setEntry(dayEntries[newDate] || "");
+
+    // Find the entry for this date from loaded data
+    const entryForDate = allJournalEntries.find(
+      (entry) => entry.entry_date === newDate
+    );
+
+    console.log("entryForDate found:", entryForDate);
+    console.log("allJournalEntries:", allJournalEntries);
+
+    if (entryForDate) {
+      // Use the actual database content for this date
+      console.log("Setting entry to:", entryForDate.content);
+      setEntry(entryForDate.content || "");
+      setWordCount(entryForDate.word_count || 0);
+      setEntryTitle(entryForDate.title || "Daily Journal");
+    } else {
+      // No entry exists for this date, start with empty content
+      console.log("No entry found for date, setting empty content");
+      setEntry("");
+      setWordCount(0);
+      setEntryTitle("Daily Journal");
+    }
   };
 
-  // Simple save function that makes a POST request
+  // Navigate to previous available date
+  const goToPreviousDay = () => {
+    const availableDates = getAvailableDates();
+    const currentIndex = availableDates.indexOf(currentDate);
+    if (currentIndex > 0) {
+      const previousDate = availableDates[currentIndex - 1];
+      switchToDay(previousDate);
+    }
+  };
+
+  // Navigate to next available date
+  const goToNextDay = () => {
+    const availableDates = getAvailableDates();
+    const currentIndex = availableDates.indexOf(currentDate);
+    if (currentIndex < availableDates.length - 1) {
+      const nextDate = availableDates[currentIndex + 1];
+      switchToDay(nextDate);
+    }
+  };
+
+  // Save current entry to database
   const saveToDatabase = async () => {
     try {
       setIsSaving(true);
-      setSaveStatus("Saving...");
+      setSaveStatus(`Saving entry for ${getDateLabel(currentDate)}...`);
 
       const response = await fetch("/api/save-journal", {
         method: "POST",
@@ -107,6 +207,8 @@ Underneath all of it, there's this restless question: How far can my "why" reall
         body: JSON.stringify({
           identity: journalData.whoIAm,
           entry: entry,
+          entryDate: currentDate,
+          title: entryTitle,
         }),
       });
 
@@ -114,7 +216,47 @@ Underneath all of it, there's this restless question: How far can my "why" reall
         throw new Error("Failed to save");
       }
 
-      setSaveStatus("Saved successfully!");
+      // Update local state with the saved entry
+      const now = new Date().toISOString();
+
+      // Update allJournalEntries to include the new/updated entry
+      setAllJournalEntries((prev) => {
+        const existingIndex = prev.findIndex(
+          (e) => e.entry_date === currentDate
+        );
+
+        if (existingIndex >= 0) {
+          // Update existing entry - preserve created_at, update others
+          const existingEntry = prev[existingIndex];
+          const updated = [...prev];
+          updated[existingIndex] = {
+            ...existingEntry,
+            title: entryTitle,
+            content: entry,
+            word_count: wordCount,
+            updated_at: now,
+            last_edited_at: now,
+            // Keep the original created_at
+          };
+          return updated;
+        } else {
+          // Add new entry - all timestamps are current
+          const newEntry = {
+            id: "", // Will be generated by database
+            user_id: "00000000-0000-0000-0000-000000000000", // Default user ID
+            entry_date: currentDate,
+            title: entryTitle,
+            content: entry,
+            word_count: wordCount,
+            created_at: now,
+            updated_at: now,
+            last_edited_at: now,
+          };
+          return [...prev, newEntry];
+        }
+      });
+
+      setSaveStatus(`Saved successfully for ${getDateLabel(currentDate)}!`);
       setTimeout(() => setSaveStatus(""), 3000);
     } catch (error) {
       console.error("Error saving:", error);
@@ -185,6 +327,14 @@ Underneath all of it, there's this restless question: How far can my "why" reall
     }
   }, [editor]);
 
+  // Update editor content when entry changes
+  useEffect(() => {
+    if (editor && entry !== editor.getHTML()) {
+      console.log("Updating editor content to:", entry);
+      editor.commands.setContent(entry);
+    }
+  }, [entry, editor]);
+
   const identitySummary = useMemo(() => {
     const text = journalData.whoIAm.replace(/\s+/g, " ").trim();
     return text.length > 180 ? `${text.slice(0, 180)}…` : text;
@@ -204,7 +354,13 @@ Underneath all of it, there's this restless question: How far can my "why" reall
     );
   }, []);
 
-  const htmlToMarkdown = (html: string): string => {
+  // Fetch all journal entries in the background after component mounts
+  useEffect(() => {
+    fetchAllEntries();
+  }, []); // Only run on mount
+
+  const htmlToMarkdown = (html: string | null): string => {
+    if (!html) return "";
     let md = html;
     md = md.replace(
       /<h2[^>]*>\s*<strong>(.*?)<\/strong>\s*<\/h2>/gi,
@@ -377,9 +533,6 @@ Underneath all of it, there's this restless question: How far can my "why" reall
         ) : (
           <span />
         )}
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">
-          {todayLabel || "Loading..."}
-        </span>
       </div>
 
       {/* Editor card (clean, stoic) */}
@@ -423,12 +576,13 @@ Underneath all of it, there's this restless question: How far can my "why" reall
                 <div className="mt-4 mb-4">
                   <div className="flex items-center justify-center">
                     <button
-                      onClick={() => {
-                        const prevDate = new Date(currentDate);
-                        prevDate.setDate(prevDate.getDate() - 1);
-                        switchToDay(prevDate.toISOString().split("T")[0]);
-                      }}
-                      className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-1 w-6 h-6 flex items-center justify-center"
+                      onClick={goToPreviousDay}
+                      disabled={!canGoPrevious()}
+                      className={`transition-colors p-1 w-6 h-6 flex items-center justify-center ${
+                        canGoPrevious()
+                          ? "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+                          : "text-transparent pointer-events-none"
+                      }`}
                       title="Previous day"
                     >
                       <svg
@@ -447,7 +601,7 @@ Underneath all of it, there's this restless question: How far can my "why" reall
                       </svg>
                     </button>
 
-                    <div className="flex flex-col items-center mx-3">
+                    <div className="flex flex-col items-center mx-3 h-12 justify-center">
                       <div className="font-serif text-zinc-600 dark:text-zinc-400 text-lg italic tracking-tight text-center w-48">
                         {getDateLabel(currentDate)}
                       </div>
@@ -467,18 +621,14 @@ Underneath all of it, there's this restless question: How far can my "why" reall
                     </div>
 
                     <button
-                      onClick={() => {
-                        const nextDate = new Date(currentDate);
-                        nextDate.setDate(nextDate.getDate() + 1);
-                        switchToDay(nextDate.toISOString().split("T")[0]);
-                      }}
+                      onClick={goToNextDay}
+                      disabled={!canGoNext()}
                       className={`transition-colors p-1 w-6 h-6 flex items-center justify-center ${
                         canGoNext()
                           ? "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
                           : "text-transparent pointer-events-none"
                       }`}
                       title={canGoNext() ? "Next day" : ""}
-                      disabled={!canGoNext()}
                     >
                       <svg
                         width="16"
@@ -702,7 +852,10 @@ Underneath all of it, there's this restless question: How far can my "why" reall
         )}
         <AIMotivationalPost
           identity={journalData.whoIAm}
-          journal={htmlToMarkdown(entry)}
+          journalEntries={allJournalEntries.map((entry) => ({
+            entry_date: entry.entry_date,
+            content: htmlToMarkdown(entry.content) || "",
+          }))}
         />
       </section>
 

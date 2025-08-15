@@ -3,6 +3,7 @@ import JournalEditor from "@/components/JournalEditor";
 import { createClient } from "@/utils/supabase/server";
 import { cookies } from "next/headers";
 
+
 export default async function JournalPage() {
   const cookieStore = await cookies();
   const supabase = createClient(cookieStore);
@@ -17,16 +18,16 @@ export default async function JournalPage() {
     .eq("user_id", defaultUserId)
     .single();
 
-  // Load today's journal entry
+  // Load today's journal entry for fast initial load
   const today = new Date().toISOString().split("T")[0];
-  const { data: journalEntry } = await supabase
+  const { data: todayEntry } = await supabase
     .from("journal_entries")
-    .select("content")
+    .select("*")
     .eq("user_id", defaultUserId)
     .eq("entry_date", today)
     .single();
 
-  console.log("Server-side data loaded:", { identity, journalEntry });
+  console.log("Server-side data loaded:", { identity, todayEntry });
 
   return (
     <div className="min-h-dvh p-6">
@@ -65,7 +66,8 @@ export default async function JournalPage() {
 
         <JournalEditor
           initialIdentity={identity?.identity_text || ""}
-          initialEntry={journalEntry?.content || ""}
+          initialEntry={todayEntry?.content || ""}
+          todayEntry={todayEntry}
         />
       </div>
     </div>

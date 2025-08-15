@@ -2,6 +2,7 @@ import { DeepPartial } from "ai";
 import { z } from "zod";
 
 export const motivationalPostSchema = z.object({
+  summary: z.string().describe("Concise summary (10-20 words max) of the main themes, topics, and concepts covered in this post. Used to avoid generating similar content in future posts. Focus on the core ideas, not the writing style."),
   post: z.object({
     theme: z.string().describe("The main theme or topic of the motivational post"),
     style: z.string().describe("The tone and style of the post (e.g., aggressive, inspiring, direct)"),
@@ -23,7 +24,7 @@ export const motivationalPostSchema = z.object({
         y: z.string().describe("Vertical position - both slides typically use center for balanced composition")
       })
     })).describe("Exactly 2 slides: [1] scroll-stopping impact statement with large centered text and commanding typography, [2] left-aligned manifesto expansion with contrasting colors and natural paragraph formatting"),
-    caption: z.string().describe("Instagram caption text for the post (do NOT include hashtags in the caption - hashtags will be added separately)"),
+    caption: z.string().describe("Instagram caption that feels like a natural extension of the post's philosophical depth. Should be raw, authentic, and thought-provoking - like the user's own reflection on the content. Avoid motivational clichés, generic language, or performative tone. Instead, write as if the user is sharing their genuine thoughts about the post's message. Can be a question, observation, or personal insight that invites deeper thinking. Keep it concise (1-2 sentences max) and maintain the same penetrating, uncompromising voice as the post itself."),
     hashtags: z.array(z.string()).describe("Array of relevant hashtags for discoverability"),
     description: z.string().describe("Brief description of what this post is about and its intended impact")
   })

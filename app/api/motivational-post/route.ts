@@ -13,8 +13,45 @@ export async function POST(req: Request) {
     style,
     identity,
     journal,
-  }: { theme?: string; style?: string; identity?: string; journal?: string } =
+  }: { theme?: string; style?: string; identity?: string; journal?: Array<{ entry_date: string; content: string }> } =
     await req.json();
+
+  // Fetch recent summaries to avoid repetition
+  let recentTitles: string[] = [];
+  let recentManifestoThemes: string[] = [];
+  try {
+    const cookieStore = await cookies();
+    const supabase = createClient(cookieStore);
+    const defaultUserId = "00000000-0000-0000-0000-000000000000";
+    
+    const { data: recentGenerations } = await supabase
+      .from('ai_generations')
+      .select('summary')
+      .eq('user_id', defaultUserId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+    
+    if (recentGenerations) {
+      recentGenerations.forEach(gen => {
+        if (gen.summary) {
+          const parts = gen.summary.split(':');
+          if (parts.length >= 2) {
+            recentTitles.push(parts[0].trim());
+            recentManifestoThemes.push(parts[1].trim());
+          }
+        }
+      });
+      console.log("Recent titles:", recentTitles);
+      console.log("Recent manifesto themes:", recentManifestoThemes);
+    }
+  } catch (error) {
+    console.error("Error fetching recent summaries:", error);
+  }
+
+  // Process journal entries into formatted string
+  const formattedJournal = journal 
+    ? journal.map(entry => `[${entry.entry_date}]\n${entry.content}`).join('\n\n')
+    : "";
 
   // Log the request parameters
   console.log("=== MOTIVATIONAL POST GENERATION REQUEST ===");
@@ -22,11 +59,13 @@ export async function POST(req: Request) {
   console.log("Theme:", theme || "General motivation and success");
   console.log("Style:", style || "Direct and powerful");
   console.log("Identity (len):", identity ? identity.length : 0);
-  console.log("Journal (len):", journal ? journal.length : 0);
+  console.log("Journal entries count:", journal ? journal.length : 0);
+  console.log("formattedjournallol:", formattedJournal);
+  console.log("Formatted journal (len):", formattedJournal.length);
   console.log(
     "Request body:",
     JSON.stringify(
-      { theme, style, identityPreview: identity?.slice(0, 140), journalPreview: journal?.slice(0, 140) },
+      { theme, style, identityPreview: identity?.slice(0, 140), journalEntriesCount: journal?.length },
       null,
       2
     )
@@ -37,6 +76,12 @@ export async function POST(req: Request) {
 You will be given two sources of truth (do not repeat verbatim). It needs to feel like the user wrote it themselves during their most brutally honest, clearest moment:
 - IDENTITY: the user's values, worldview, voice, and self-description (background context)
 - JOURNAL: messy, raw, unfiltered notes from the user's recent thoughts (PRIMARY SOURCE)
+
+CRITICAL: Avoid repetition. Recent content to avoid:
+- Slide 1 titles: ${recentTitles.join(', ')}
+- Manifesto themes: ${recentManifestoThemes.join(', ')}
+
+Do not repeat these titles or create similar manifesto content.
 
 Your task is to create a personalized 2-slide motivational post that delivers maximum psychological impact through radical contrast, poetic depth, and raw authenticity. Write as if the user themselves could have written it during a moment of profound clarity. You MUST mine the journal for psychological tensions, contradictions, and deeper philosophical truths that the user is wrestling with beneath the surface. Transform their surface thoughts into profound realizations that feel authentically theirs, as if you captured their internal monologue and weaponized it into devastating clarity.
 
@@ -96,9 +141,15 @@ Goal: Create content so penetrating and original that it becomes unforgettable, 
 
   const userPrompt = `Generate a two-slide motivational post that's so penetrating and visually striking it stops the scroll immediately. Create content that reads like philosophical poetry and looks like visual art.
 
+CRITICAL: Avoid repetition. Recent content to avoid:
+- Slide 1 titles: ${recentTitles.join(', ')}
+- Manifesto themes: ${recentManifestoThemes.join(', ')}
+
+Do not repeat these titles or create similar manifesto content.
+
 IDENTITY (reference, do not repeat verbatim, background and values context only):\n"""${(identity || "").slice(0, 4000)}"""
 
-JOURNAL (PRIMARY SOURCE - mine for psychological tensions and philosophical implications):\n"""${(journal || "").slice(0, 8000)}"""
+JOURNAL (PRIMARY SOURCE - mine for psychological tensions and philosophical implications):\n"""${formattedJournal}"""
 
 SLIDE 1: Create an impactful, eye-catching statement that stops the scroll and makes people screenshot it. This goes in the 'title' field. Length should typically be 5-16 words - make it substantial and memorable. Can use line breaks for dramatic effect (two single-line paragraphs). Be bold, direct, and authentic - use raw language if it serves the impact. Can be imperative commands, conditional insights, metaphorical truths, or vulnerable revelations. Extract from the journal's deeper philosophical implications and psychological tensions, focus on being IMPACTING, creative, original, profound and philosophical. Think: what would make someone immediately stop scrolling? Use center alignment and massive typography (text-5xl+).
 
@@ -161,7 +212,7 @@ Return structured content per the expected schema with natural paragraph formatt
   console.log("User Prompt:", userPrompt);
 
   const result = streamObject({
-    model: openai("gpt-4-turbo"),
+    model: openai("gpt-4.1"),
     system: systemPrompt,
     prompt: userPrompt,
     schema: motivationalPostSchema,
@@ -210,13 +261,19 @@ Return structured content per the expected schema with natural paragraph formatt
           // Construct the prompt that was sent (combining system + user prompts)
           const fullPrompt = `SYSTEM:\n${systemPrompt}\n\nUSER:\n${userPrompt}`;
           
+          // Extract slide 1 title and summary for storage
+          const slide1Title = post?.slides?.[0]?.content?.title || '';
+          const summary = object?.summary || '';
+          const summaryText = slide1Title && summary ? `${slide1Title}: ${summary}` : summary;
+          
           const { error } = await supabase
             .from('ai_generations')
             .insert({
               user_id: defaultUserId,
               prompt_sent: fullPrompt,
               ai_response: object,
-              model_used: 'gpt-4-turbo',
+              summary: summaryText,
+              model_used: 'gpt-4.1',
               generation_type: 'motivational_post'
             });
 
