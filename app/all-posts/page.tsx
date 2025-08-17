@@ -20,6 +20,21 @@ export default function AllPostsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [editablePosts, setEditablePosts] = useState<AIGeneration[]>([]);
+  const [editingField, setEditingField] = useState<{
+    postIndex: number;
+    slideIndex: number;
+    field: "title" | "subtitle" | "body";
+  } | null>(null);
+  const [editingCaption, setEditingCaption] = useState<{
+    postIndex: number;
+  } | null>(null);
+  const [showBodyEditor, setShowBodyEditor] = useState<{
+    postIndex: number;
+    slideIndex: number;
+    currentText: string;
+    field?: "title" | "body";
+  } | null>(null);
 
   async function checkAuthAndFetchPosts() {
     try {
@@ -29,12 +44,89 @@ export default function AllPostsPage() {
       }
       const data = await response.json();
       setPosts(data.posts || []);
+      setEditablePosts(data.posts || []); // Initialize editable posts
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setLoading(false);
     }
   }
+
+  const updateSlideContent = (
+    postIndex: number,
+    slideIndex: number,
+    field: "title" | "subtitle" | "body",
+    value: string
+  ) => {
+    setEditablePosts((prev) =>
+      prev.map((post, index) => {
+        if (index !== postIndex) return post;
+
+        const updatedResponse = { ...post.ai_response };
+        if (updatedResponse.post && updatedResponse.post.slides) {
+          updatedResponse.post.slides = updatedResponse.post.slides.map(
+            (slide: any, slideIdx: number) =>
+              slideIdx === slideIndex
+                ? { ...slide, content: { ...slide.content, [field]: value } }
+                : slide
+          );
+        }
+
+        return { ...post, ai_response: updatedResponse };
+      })
+    );
+  };
+
+  const updateCaption = (postIndex: number, value: string) => {
+    setEditablePosts((prev) =>
+      prev.map((post, index) => {
+        if (index !== postIndex) return post;
+
+        const updatedResponse = { ...post.ai_response };
+        updatedResponse.caption = value;
+
+        return { ...post, ai_response: updatedResponse };
+      })
+    );
+  };
+
+  const handleTextClick = (
+    postIndex: number,
+    slideIndex: number,
+    field: "title" | "subtitle" | "body"
+  ) => {
+    if (field === "body") {
+      const currentText =
+        editablePosts[postIndex]?.ai_response?.post?.slides?.[slideIndex]
+          ?.content?.body || "";
+      setShowBodyEditor({ postIndex, slideIndex, currentText });
+    } else if (field === "title" && slideIndex === 0) {
+      // Slide 1 title - use modal
+      const currentText =
+        editablePosts[postIndex]?.ai_response?.post?.slides?.[slideIndex]
+          ?.content?.title || "";
+      setShowBodyEditor({
+        postIndex,
+        slideIndex,
+        currentText: currentText,
+        field: "title",
+      });
+    } else {
+      setEditingField({ postIndex, slideIndex, field });
+    }
+  };
+
+  const handleTextBlur = () => {
+    setEditingField(null);
+  };
+
+  const handleCaptionClick = (postIndex: number) => {
+    setEditingCaption({ postIndex });
+  };
+
+  const handleCaptionBlur = () => {
+    setEditingCaption(null);
+  };
 
   useEffect(() => {
     checkAuthAndFetchPosts();
@@ -151,6 +243,9 @@ export default function AllPostsPage() {
           <p className="text-gray-600 dark:text-gray-400">
             {posts.length} post{posts.length !== 1 ? "s" : ""} found
           </p>
+          <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
+            💡 Click any text to edit (changes are temporary)
+          </div>
         </div>
 
         {posts.length === 0 ? (
@@ -162,7 +257,7 @@ export default function AllPostsPage() {
           </div>
         ) : (
           <div className="space-y-6">
-            {posts.map((post, index) => {
+            {editablePosts.map((post, index) => {
               const slides = convertToSlides(post.ai_response);
 
               if (slides.length === 0) {
@@ -207,42 +302,28 @@ export default function AllPostsPage() {
                         {/* Slide 1 Style - Single powerful sentence */}
                         {slides[currentSlide]?.id === 1 ? (
                           <div className="space-y-8">
-                            <h1
-                              className="leading-tight"
-                              style={{
-                                color:
-                                  slides[currentSlide]?.textColor || "#ffffff",
-                                fontFamily:
-                                  slides[currentSlide]?.fontFamily === "serif"
-                                    ? "Georgia, serif"
-                                    : slides[currentSlide]?.fontFamily ===
-                                      "monospace"
-                                    ? "Courier New, monospace"
-                                    : "Arial, sans-serif",
-                                fontSize: "1.25rem",
-                                textAlign:
-                                  slides[currentSlide]?.textAlign ===
-                                  "text-center"
-                                    ? "center"
-                                    : slides[currentSlide]?.textAlign ===
-                                      "text-left"
-                                    ? "left"
-                                    : "center",
-                              }}
-                            >
-                              {slides[currentSlide]?.content?.title}
-                            </h1>
-                          </div>
-                        ) : (
-                          /* Slide 2 Style - Title + Body text */
-                          <div className="space-y-6 max-w-2xl">
-                            <div className="space-y-3">
-                              <h2
-                                className="leading-tight"
+                            {editingField?.postIndex === index &&
+                            editingField?.slideIndex === currentSlide &&
+                            editingField?.field === "title" ? (
+                              <textarea
+                                value={
+                                  slides[currentSlide]?.content?.title || ""
+                                }
+                                onChange={(e) =>
+                                  updateSlideContent(
+                                    index,
+                                    currentSlide,
+                                    "title",
+                                    e.target.value
+                                  )
+                                }
+                                onBlur={handleTextBlur}
+                                className="w-full bg-transparent border-none outline-none resize-none leading-tight"
+                                aria-label="Edit slide title"
                                 style={{
                                   color:
                                     slides[currentSlide]?.textColor ||
-                                    "#000000",
+                                    "#ffffff",
                                   fontFamily:
                                     slides[currentSlide]?.fontFamily === "serif"
                                       ? "Georgia, serif"
@@ -250,8 +331,7 @@ export default function AllPostsPage() {
                                         "monospace"
                                       ? "Courier New, monospace"
                                       : "Arial, sans-serif",
-                                  fontSize: "1.5rem",
-                                  fontWeight: "bold",
+                                  fontSize: "1.25rem",
                                   textAlign:
                                     slides[currentSlide]?.textAlign ===
                                     "text-center"
@@ -259,21 +339,150 @@ export default function AllPostsPage() {
                                       : slides[currentSlide]?.textAlign ===
                                         "text-left"
                                       ? "left"
-                                      : "left",
-                                  textDecorationThickness: "1px",
-                                  textUnderlineOffset: "0.2em",
-                                  marginBottom: "1.25rem",
-                                  position: "relative" as const,
-                                  fontStyle: "italic",
-                                  lineHeight: "1.2",
-                                  borderLeft: `5px solid ${
-                                    slides[currentSlide]?.textColor || "#000000"
-                                  }`,
-                                  paddingLeft: "0.75rem",
+                                      : "center",
+                                }}
+                                autoFocus
+                              />
+                            ) : (
+                              <h1
+                                className="leading-tight cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() =>
+                                  handleTextClick(index, currentSlide, "title")
+                                }
+                                style={{
+                                  color:
+                                    slides[currentSlide]?.textColor ||
+                                    "#ffffff",
+                                  fontFamily:
+                                    slides[currentSlide]?.fontFamily === "serif"
+                                      ? "Georgia, serif"
+                                      : slides[currentSlide]?.fontFamily ===
+                                        "monospace"
+                                      ? "Courier New, monospace"
+                                      : "Arial, sans-serif",
+                                  fontSize: "1.25rem",
+                                  textAlign:
+                                    slides[currentSlide]?.textAlign ===
+                                    "text-center"
+                                      ? "center"
+                                      : slides[currentSlide]?.textAlign ===
+                                        "text-left"
+                                      ? "left"
+                                      : "center",
+                                  whiteSpace: "pre-line",
                                 }}
                               >
-                                {slides[currentSlide]?.content?.title}.
-                              </h2>
+                                {slides[currentSlide]?.content?.title}
+                              </h1>
+                            )}
+                          </div>
+                        ) : (
+                          /* Slide 2 Style - Title + Body text */
+                          <div className="space-y-6 max-w-2xl">
+                            <div className="space-y-3">
+                              {editingField?.postIndex === index &&
+                              editingField?.slideIndex === currentSlide &&
+                              editingField?.field === "title" ? (
+                                <textarea
+                                  value={
+                                    slides[currentSlide]?.content?.title || ""
+                                  }
+                                  onChange={(e) =>
+                                    updateSlideContent(
+                                      index,
+                                      currentSlide,
+                                      "title",
+                                      e.target.value
+                                    )
+                                  }
+                                  onBlur={handleTextBlur}
+                                  className="w-full bg-transparent border-none outline-none resize-none leading-tight"
+                                  aria-label="Edit slide title"
+                                  style={{
+                                    color:
+                                      slides[currentSlide]?.textColor ||
+                                      "#000000",
+                                    fontFamily:
+                                      slides[currentSlide]?.fontFamily ===
+                                      "serif"
+                                        ? "Georgia, serif"
+                                        : slides[currentSlide]?.fontFamily ===
+                                          "monospace"
+                                        ? "Courier New, monospace"
+                                        : "Arial, sans-serif",
+                                    fontSize: "1.5rem",
+                                    fontWeight: "bold",
+                                    textAlign:
+                                      slides[currentSlide]?.textAlign ===
+                                      "text-center"
+                                        ? "center"
+                                        : slides[currentSlide]?.textAlign ===
+                                          "text-left"
+                                        ? "left"
+                                        : "left",
+                                    textDecorationThickness: "1px",
+                                    textUnderlineOffset: "0.2em",
+                                    marginBottom: "1.25rem",
+                                    position: "relative" as const,
+                                    fontStyle: "italic",
+                                    lineHeight: "1.2",
+                                    borderLeft: `5px solid ${
+                                      slides[currentSlide]?.textColor ||
+                                      "#000000"
+                                    }`,
+                                    paddingLeft: "0.75rem",
+                                  }}
+                                  autoFocus
+                                />
+                              ) : (
+                                <h2
+                                  className="leading-tight cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() =>
+                                    handleTextClick(
+                                      index,
+                                      currentSlide,
+                                      "title"
+                                    )
+                                  }
+                                  style={{
+                                    color:
+                                      slides[currentSlide]?.textColor ||
+                                      "#000000",
+                                    fontFamily:
+                                      slides[currentSlide]?.fontFamily ===
+                                      "serif"
+                                        ? "Georgia, serif"
+                                        : slides[currentSlide]?.fontFamily ===
+                                          "monospace"
+                                        ? "Courier New, monospace"
+                                        : "Arial, sans-serif",
+                                    fontSize: "1.5rem",
+                                    fontWeight: "bold",
+                                    textAlign:
+                                      slides[currentSlide]?.textAlign ===
+                                      "text-center"
+                                        ? "center"
+                                        : slides[currentSlide]?.textAlign ===
+                                          "text-left"
+                                        ? "left"
+                                        : "left",
+                                    textDecorationThickness: "1px",
+                                    textUnderlineOffset: "0.2em",
+                                    marginBottom: "1.25rem",
+                                    position: "relative" as const,
+                                    fontStyle: "italic",
+                                    lineHeight: "1.2",
+                                    borderLeft: `5px solid ${
+                                      slides[currentSlide]?.textColor ||
+                                      "#000000"
+                                    }`,
+                                    paddingLeft: "0.75rem",
+                                    whiteSpace: "pre-line",
+                                  }}
+                                >
+                                  {slides[currentSlide]?.content?.title}.
+                                </h2>
+                              )}
                               {slides[currentSlide]?.content?.subtitle && (
                                 <p
                                   className="italic"
@@ -298,7 +507,12 @@ export default function AllPostsPage() {
                               )}
                             </div>
                             {slides[currentSlide]?.content?.body && (
-                              <div className="space-y-3">
+                              <div
+                                className="space-y-3 cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() =>
+                                  handleTextClick(index, currentSlide, "body")
+                                }
+                              >
                                 {slides[currentSlide]?.content?.body
                                   .split("\n\n")
                                   .filter(
@@ -362,8 +576,9 @@ export default function AllPostsPage() {
                                                   ?.textColor || "#ffffff"
                                               : "currentColor",
                                             paddingTop: isLastParagraph
-                                              ? "0.75rem"
-                                              : "0",
+                                              ? "1.25rem"
+                                              : "0.75rem",
+                                            whiteSpace: "pre-line",
                                           }}
                                         >
                                           {paragraph}
@@ -475,6 +690,60 @@ export default function AllPostsPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Text Editor Modal */}
+        {showBodyEditor && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                {showBodyEditor.field === "title"
+                  ? "Edit Title"
+                  : "Edit Body Text"}
+              </h3>
+              <textarea
+                value={showBodyEditor.currentText}
+                onChange={(e) =>
+                  setShowBodyEditor((prev) =>
+                    prev ? { ...prev, currentText: e.target.value } : null
+                  )
+                }
+                className={`w-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg resize-none text-gray-900 dark:text-white bg-white dark:bg-gray-700 ${
+                  showBodyEditor.field === "title" ? "h-32" : "h-64"
+                }`}
+                placeholder={
+                  showBodyEditor.field === "title"
+                    ? "Edit the title here..."
+                    : "Edit the body text here..."
+                }
+                autoFocus
+              />
+              <div className="flex justify-end space-x-3 mt-4">
+                <button
+                  onClick={() => setShowBodyEditor(null)}
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (showBodyEditor) {
+                      updateSlideContent(
+                        showBodyEditor.postIndex,
+                        showBodyEditor.slideIndex,
+                        showBodyEditor.field || "body",
+                        showBodyEditor.currentText
+                      );
+                      setShowBodyEditor(null);
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
