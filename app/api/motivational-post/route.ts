@@ -216,19 +216,33 @@ Return structured content per the expected schema with natural paragraph formatt
     system: systemPrompt,
     prompt: userPrompt,
     schema: motivationalPostSchema,
-    async onFinish({ object }) {
+    async onFinish({ object, error }) {
       // Log the complete generated object
       console.log("=== GENERATION COMPLETE ===");
-      console.log("Generated object:", JSON.stringify(object, null, 2));
+      console.log("Generated object:", object);
+      console.log("Object type:", typeof object);
+      console.log("Object keys:", object ? Object.keys(object) : 'undefined');
       
-      if (object && typeof object === 'object' && 'post' in object && object.post) {
+      if (error) {
+        console.error("❌ Generation error:", error);
+        console.log("=== END GENERATION LOG ===");
+        return;
+      }
+      
+      if (!object) {
+        console.error("❌ No object generated - schema validation may have failed");
+        console.log("=== END GENERATION LOG ===");
+        return;
+      }
+      
+      if (typeof object === 'object' && 'post' in object && object.post) {
         const post = object.post as any;
         console.log("=== POST DETAILS ===");
         console.log("Theme:", post.theme);
         console.log("Style:", post.style);
-        console.log("Caption:", post.caption);
-        console.log("Hashtags:", post.hashtags);
-        console.log("Description:", post.description);
+        console.log("Caption:", object.caption);
+        console.log("Hashtags:", object.hashtags);
+        console.log("Description:", object.description);
         
         console.log("=== SLIDES DETAILS ===");
         if (post.slides && Array.isArray(post.slides)) {
@@ -285,6 +299,9 @@ Return structured content per the expected schema with natural paragraph formatt
         } catch (error) {
           console.error("❌ Error in AI generation save:", error);
         }
+      } else {
+        console.error("❌ Invalid object structure - missing 'post' property");
+        console.log("Object structure:", JSON.stringify(object, null, 2));
       }
       
       console.log("=== END GENERATION LOG ===");

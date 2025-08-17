@@ -10,6 +10,10 @@ import {
 import MotivationalPost from "./MotivationalPost";
 import { motivationalPostSchema } from "@/app/api/motivational-post/schema";
 import { motion } from "framer-motion";
+import { z } from "zod";
+
+// Type for the complete AI response including root-level properties
+type AIResponse = z.infer<typeof motivationalPostSchema>;
 
 interface AIMotivationalPostProps {
   theme?: string;
@@ -52,16 +56,16 @@ export default function AIMotivationalPost({
 
       // Use the object state instead of the finishObject parameter
       if (object != null && object.post) {
+        const aiResponse = object as AIResponse;
         console.log("=== POST DETAILS (CLIENT) ===");
-        console.log("Theme:", object.post.theme);
-        console.log("Style:", object.post.style);
-        console.log("Caption:", object.post.caption);
-        console.log("Hashtags:", object.post.hashtags);
-        console.log("Description:", object.post.description);
-
+        console.log("Theme:", aiResponse.post.theme);
+        console.log("Style:", aiResponse.post.style);
+        console.log("Caption:", aiResponse.caption);
+        console.log("Hashtags:", aiResponse.hashtags);
+        console.log("Description:", aiResponse.description);
         console.log("=== SLIDES DETAILS (CLIENT) ===");
-        if (object.post.slides && Array.isArray(object.post.slides)) {
-          object.post.slides.forEach((slide: any, index: number) => {
+        if (aiResponse.post.slides && Array.isArray(aiResponse.post.slides)) {
+          aiResponse.post.slides.forEach((slide: any, index: number) => {
             console.log(`Slide ${index + 1}:`);
             console.log("  - ID:", slide.id);
             console.log("  - Background Color:", slide.backgroundColor);
@@ -80,7 +84,7 @@ export default function AIMotivationalPost({
 
         // Mark post as ready and store complete object
         setIsPostReady(true);
-        setCompletePost(object.post);
+        setCompletePost(aiResponse);
 
         setIsGenerating(true);
         try {
@@ -212,10 +216,10 @@ export default function AIMotivationalPost({
         >
           <MotivationalPost
             slides={convertToSlides(object.post)}
-            caption={object.post.caption || undefined}
+            caption={(object as AIResponse)?.caption || undefined}
             hashtags={
-              object.post.hashtags?.filter(
-                (tag): tag is string => tag !== undefined
+              (object as AIResponse)?.hashtags?.filter(
+                (tag: string): tag is string => tag !== undefined
               ) || undefined
             }
             theme={object.post.theme || undefined}
@@ -245,10 +249,10 @@ export default function AIMotivationalPost({
         <motion.div initial={{ opacity: 0.4 }} animate={{ opacity: 1 }}>
           <MotivationalPost
             slides={convertToSlides(object.post)}
-            caption={object.post.caption || undefined}
+            caption={(object as AIResponse)?.caption || undefined}
             hashtags={
-              object.post.hashtags?.filter(
-                (tag): tag is string => tag !== undefined
+              (object as AIResponse)?.hashtags?.filter(
+                (tag: string): tag is string => tag !== undefined
               ) || undefined
             }
             theme={object.post.theme || undefined}

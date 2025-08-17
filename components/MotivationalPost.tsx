@@ -201,7 +201,7 @@ export default function MotivationalPost({
         <div className="flex justify-center mt-4 space-x-2">
           {slides.map((slide, index) => (
             <button
-              key={slide.id}
+              key={index}
               onClick={() => goToSlide(index)}
               className={`w-2 h-2 rounded-full transition-all duration-200 ${
                 index === currentSlide

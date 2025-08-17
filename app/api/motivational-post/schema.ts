@@ -22,12 +22,12 @@ export const motivationalPostSchema = z.object({
       textPosition: z.object({
         x: z.string().describe("Horizontal position - SLIDE 1: center for impact. SLIDE 2: left for readability"),
         y: z.string().describe("Vertical position - both slides typically use center for balanced composition")
-      })
-    })).describe("Exactly 2 slides: [1] scroll-stopping impact statement with large centered text and commanding typography, [2] left-aligned manifesto expansion with contrasting colors and natural paragraph formatting"),
-    caption: z.string().describe("Instagram caption that feels like a natural extension of the post's philosophical depth. Should be raw, authentic, and thought-provoking - like the user's own reflection on the content. Avoid motivational clichés, generic language, or performative tone. Instead, write as if the user is sharing their genuine thoughts about the post's message. Can be a question, observation, or personal insight that invites deeper thinking. Keep it concise (1-2 sentences max) and maintain the same penetrating, uncompromising voice as the post itself."),
-    hashtags: z.array(z.string()).describe("Array of relevant hashtags for discoverability"),
-    description: z.string().describe("Brief description of what this post is about and its intended impact")
-  })
+      }).optional()
+    })).describe("Exactly 2 slides: [1] scroll-stopping impact statement with large centered text and commanding typography, [2] left-aligned manifesto expansion with contrasting colors and natural paragraph formatting")
+  }),
+  caption: z.string().describe("Instagram caption that feels like a natural extension of the post's philosophical depth. Should be raw, authentic, and thought-provoking - like the user's own reflection on the content. Avoid motivational clichés, generic language, or performative tone. Instead, write as if the user is sharing their genuine thoughts about the post's message. Can be a question, observation, or personal insight that invites deeper thinking. Keep it concise (1-2 sentences max) and maintain the same penetrating, uncompromising voice as the post itself."),
+  hashtags: z.array(z.string()).describe("Array of relevant hashtags for discoverability"),
+  description: z.string().describe("Brief description of what this post is about and its intended impact")
 });
 
 // define a type for the partial notifications during generation
