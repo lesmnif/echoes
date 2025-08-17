@@ -264,7 +264,7 @@ export default function AllPostsPage() {
                 return (
                   <div
                     key={index}
-                    className="w-full max-w-xl mx-auto bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+                    className="w-full max-w-xl mx-auto bg-white dark:bg-gray-800 p-4 border border-gray-200 dark:border-gray-700"
                   >
                     <p className="text-gray-500 dark:text-gray-400 text-sm">
                       Invalid post data
@@ -280,13 +280,13 @@ export default function AllPostsPage() {
                 <div
                   key={index}
                   data-post-id={index}
-                  className="w-full max-w-xl mx-auto bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700"
+                  className="w-full max-w-xl mx-auto bg-white dark:bg-gray-800  p-4 border border-gray-200 dark:border-gray-700"
                 >
                   {/* Custom larger slide display */}
                   <div className="w-full">
                     {/* Main Slide Display */}
                     <div
-                      className="aspect-[4/5] rounded-lg overflow-hidden relative"
+                      className="aspect-[4/5] overflow-hidden relative"
                       style={{
                         backgroundColor: slides[currentSlide]?.backgroundColor,
                       }}
@@ -696,7 +696,7 @@ export default function AllPostsPage() {
         {/* Text Editor Modal */}
         {showBodyEditor && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="bg-white dark:bg-gray-800  p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
                 {showBodyEditor.field === "title"
                   ? "Edit Title"
@@ -709,7 +709,7 @@ export default function AllPostsPage() {
                     prev ? { ...prev, currentText: e.target.value } : null
                   )
                 }
-                className={`w-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg resize-none text-gray-900 dark:text-white bg-white dark:bg-gray-700 ${
+                className={`w-full p-4 border border-gray-300 dark:border-gray-600 resize-none text-gray-900 dark:text-white bg-white dark:bg-gray-700 ${
                   showBodyEditor.field === "title" ? "h-32" : "h-64"
                 }`}
                 placeholder={

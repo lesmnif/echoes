@@ -163,6 +163,9 @@ BODY (goes in 'body' field): Write a powerful, deeply poetic manifesto (80-120 w
 - Use literary devices: alliteration, internal rhyme, parallel structure, contrasts
 - Create language that readers can feel, taste, and visualize - make abstract concepts tangible
 - Write like a poet-philosopher: rhythmic prose with emotional depth and philosophical insight
+- BREATHING RHYTHM: Create an inhale/exhale pattern - build tension with longer paragraphs (inhale), release with shorter, punchy declarations (exhale)
+- PROPHETIC TONE: Use a warning-like, consuming intensity that feels like a flame - make readers feel the obsession and hunger
+- PARALLEL STRUCTURES: Use parallel sentence constructions ("To build is to sacrifice. To create is to consume.") for memorable, quotable impact
 - CRITICAL VARIETY: Create dramatically varied paragraph structures - avoid predictable 2-3 similar-length paragraphs
 - Mix diverse lengths: very short (1 line ~10 words), short punchy (2-3 lines ~20-30 words), medium (3-4 lines ~30-40 words), occasionally longer (4-5 lines ~40-50 words)
 - Use strategic single-line paragraphs in the MIDDLE for dramatic impact and rhythm - not just at the end
@@ -188,7 +191,7 @@ Formatting Guidelines:
 - EXAMPLE PATTERNS: "Long build-up.\n\nShort punch.\n\nSingle impact.\n\nMedium reflection.\n\nFinal truth."
 
 Content Focus:
-Based primarily on the journal's psychological tensions and philosophical implications, create a manifesto and title that feels like the user's own deepest realizations. Transform surface thoughts into profound truths without referencing the literal surface content. Extract the essence, not the elements.
+Based primarily on the journal's psychological tensions and philosophical implications, create a manifesto and title that feels like the user's own deepest realizations. Transform surface thoughts into profound truths without referencing the literal surface content. Extract the essence, not the elements. Channel a prophetic, consuming intensity that warns and compels - make readers feel the obsession and hunger that drives transformation.
 
 CRITICAL: Avoid em dashes (—) completely as they are strongly associated with AI-generated content and reduce authenticity. Use periods, commas, semicolons, or other punctuation instead.
 

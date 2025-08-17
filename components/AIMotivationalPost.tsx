@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { experimental_useObject } from "ai/react";
-import { MotivationalPost as MotivationalPostType } from "@/app/api/motivational-post/schema";
 import {
   generateMotivationalImages,
   GeneratedImage,
@@ -11,6 +10,7 @@ import MotivationalPost from "./MotivationalPost";
 import { motivationalPostSchema } from "@/app/api/motivational-post/schema";
 import { motion } from "framer-motion";
 import { z } from "zod";
+import Image from "next/image";
 
 // Type for the complete AI response including root-level properties
 type AIResponse = z.infer<typeof motivationalPostSchema>;
@@ -292,9 +292,11 @@ export default function AIMotivationalPost({
                 key={index}
                 className="border border-zinc-200 dark:border-zinc-700 rounded-lg overflow-hidden"
               >
-                <img
+                <Image
                   src={image.dataUrl}
                   alt={`Generated slide ${index + 1}`}
+                  width={image.width}
+                  height={image.height}
                   className="w-full h-auto"
                 />
                 <div className="p-3 bg-zinc-50 dark:bg-zinc-800">

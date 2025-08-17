@@ -7,6 +7,11 @@ export interface GeneratedImage {
 }
 
 export async function generateMotivationalImages(post: MotivationalPost): Promise<GeneratedImage[]> {
+  // Check if we're in a browser environment
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    throw new Error('This function can only run in a browser environment');
+  }
+
   const images: GeneratedImage[] = [];
   
   for (const slide of post.slides) {
@@ -52,12 +57,12 @@ export async function generateMotivationalImages(post: MotivationalPost): Promis
     
     // Calculate text position
     let x = width / 2; // Default center
-    if (slide.textPosition.x.includes('left')) x = 100;
-    if (slide.textPosition.x.includes('right')) x = width - 100;
+    if (slide.textPosition?.x?.includes('left')) x = 100;
+    if (slide.textPosition?.x?.includes('right')) x = width - 100;
     
     let y = height / 2; // Default center
-    if (slide.textPosition.y.includes('top')) y = 200;
-    if (slide.textPosition.y.includes('bottom')) y = height - 200;
+    if (slide.textPosition?.y?.includes('top')) y = 200;
+    if (slide.textPosition?.y?.includes('bottom')) y = height - 200;
     
     // Draw title
     ctx.fillText(slide.content.title, x, y);
