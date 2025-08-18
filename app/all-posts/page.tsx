@@ -36,6 +36,31 @@ export default function AllPostsPage() {
     field?: "title" | "body";
   } | null>(null);
 
+  // Function to parse text and convert *text* to bold
+  const parseTextWithFormatting = (text: string) => {
+    if (!text) return text;
+
+    // Split by asterisks and process each part
+    const parts = text.split("*");
+    const elements: (string | JSX.Element)[] = [];
+
+    for (let i = 0; i < parts.length; i++) {
+      if (i % 2 === 0) {
+        // Regular text
+        elements.push(parts[i]);
+      } else {
+        // Text between asterisks - make it bold
+        elements.push(
+          <span key={i} style={{ fontWeight: "700" }}>
+            {parts[i]}
+          </span>
+        );
+      }
+    }
+
+    return elements;
+  };
+
   async function checkAuthAndFetchPosts() {
     try {
       const response = await fetch("/api/all-posts");
@@ -331,7 +356,8 @@ export default function AllPostsPage() {
                                         "monospace"
                                       ? "Courier New, monospace"
                                       : "Arial, sans-serif",
-                                  fontSize: "1.25rem",
+                                  fontSize: "2.5rem",
+                                  fontWeight: "900",
                                   textAlign:
                                     slides[currentSlide]?.textAlign ===
                                     "text-center"
@@ -340,6 +366,9 @@ export default function AllPostsPage() {
                                         "text-left"
                                       ? "left"
                                       : "center",
+                                  lineHeight: "1.1",
+                                  letterSpacing: "0.01em",
+                                  fontStyle: "italic",
                                 }}
                                 autoFocus
                               />
@@ -360,7 +389,8 @@ export default function AllPostsPage() {
                                         "monospace"
                                       ? "Courier New, monospace"
                                       : "Arial, sans-serif",
-                                  fontSize: "1.25rem",
+                                  fontSize: "1.5rem",
+                                  fontWeight: "900",
                                   textAlign:
                                     slides[currentSlide]?.textAlign ===
                                     "text-center"
@@ -369,10 +399,15 @@ export default function AllPostsPage() {
                                         "text-left"
                                       ? "left"
                                       : "center",
+                                  lineHeight: "1.1",
+                                  letterSpacing: "0.01em",
+                                  fontStyle: "italic",
                                   whiteSpace: "pre-line",
                                 }}
                               >
-                                {slides[currentSlide]?.content?.title}
+                                {parseTextWithFormatting(
+                                  slides[currentSlide]?.content?.title || ""
+                                )}
                               </h1>
                             )}
                           </div>
@@ -410,8 +445,8 @@ export default function AllPostsPage() {
                                           "monospace"
                                         ? "Courier New, monospace"
                                         : "Arial, sans-serif",
-                                    fontSize: "1.5rem",
-                                    fontWeight: "bold",
+                                    fontSize: "1.6rem",
+                                    fontWeight: "800",
                                     textAlign:
                                       slides[currentSlide]?.textAlign ===
                                       "text-center"
@@ -456,8 +491,8 @@ export default function AllPostsPage() {
                                           "monospace"
                                         ? "Courier New, monospace"
                                         : "Arial, sans-serif",
-                                    fontSize: "1.5rem",
-                                    fontWeight: "bold",
+                                    fontSize: "1.6rem",
+                                    fontWeight: "800",
                                     textAlign:
                                       slides[currentSlide]?.textAlign ===
                                       "text-center"
@@ -480,7 +515,10 @@ export default function AllPostsPage() {
                                     whiteSpace: "pre-line",
                                   }}
                                 >
-                                  {slides[currentSlide]?.content?.title}.
+                                  {parseTextWithFormatting(
+                                    slides[currentSlide]?.content?.title || ""
+                                  )}
+                                  .
                                 </h2>
                               )}
                               {slides[currentSlide]?.content?.subtitle && (
@@ -498,11 +536,16 @@ export default function AllPostsPage() {
                                           "monospace"
                                         ? "Courier New, monospace"
                                         : "Arial, sans-serif",
-                                    fontSize: "0.875rem",
+                                    fontSize: "1rem",
+                                    fontWeight: "500",
                                     opacity: 0.9,
+                                    fontStyle: "italic",
                                   }}
                                 >
-                                  {slides[currentSlide]?.content?.subtitle}
+                                  {parseTextWithFormatting(
+                                    slides[currentSlide]?.content?.subtitle ||
+                                      ""
+                                  )}
                                 </p>
                               )}
                             </div>
@@ -555,33 +598,20 @@ export default function AllPostsPage() {
                                                 ? "Courier New, monospace"
                                                 : "Arial, sans-serif",
                                             fontSize: isLastParagraph
-                                              ? "0.95rem"
-                                              : "0.9rem",
-                                            opacity: isLastParagraph ? 1 : 0.95,
-                                            filter: isLastParagraph
-                                              ? "brightness(1.15)"
-                                              : "none",
-                                            textDecoration: isLastParagraph
-                                              ? "underline"
-                                              : "none",
-                                            textDecorationThickness:
-                                              isLastParagraph
-                                                ? "1.5px"
-                                                : "auto",
-                                            textUnderlineOffset: isLastParagraph
-                                              ? "0.3em"
-                                              : "auto",
-                                            textDecorationColor: isLastParagraph
-                                              ? slides[currentSlide]
-                                                  ?.textColor || "#ffffff"
-                                              : "currentColor",
+                                              ? "1.2rem"
+                                              : "1.1rem",
+                                            fontWeight: isLastParagraph
+                                              ? "600"
+                                              : "400",
+                                            opacity: isLastParagraph ? 1 : 1,
                                             paddingTop: isLastParagraph
-                                              ? "1.25rem"
-                                              : "0.75rem",
+                                              ? "1.5rem"
+                                              : "1rem",
+                                            lineHeight: "1.5",
                                             whiteSpace: "pre-line",
                                           }}
                                         >
-                                          {paragraph}
+                                          {parseTextWithFormatting(paragraph)}
                                         </p>
                                       );
                                     }
