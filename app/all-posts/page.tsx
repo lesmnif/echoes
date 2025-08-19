@@ -389,8 +389,8 @@ export default function AllPostsPage() {
                                         "monospace"
                                       ? "Courier New, monospace"
                                       : "Arial, sans-serif",
-                                  fontSize: "1.5rem",
-                                  fontWeight: "900",
+                                  fontSize: "1.7rem",
+                                  fontWeight: "500",
                                   textAlign:
                                     slides[currentSlide]?.textAlign ===
                                     "text-center"
@@ -401,7 +401,7 @@ export default function AllPostsPage() {
                                       : "center",
                                   lineHeight: "1.1",
                                   letterSpacing: "0.01em",
-                                  fontStyle: "italic",
+                                  fontStyle: "",
                                   whiteSpace: "pre-line",
                                 }}
                               >
